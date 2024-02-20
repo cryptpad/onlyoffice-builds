@@ -286,6 +286,8 @@ function NativeOpenFileData(data, version, xlsx_file_path, options)
 	if (window.NATIVE_DOCUMENT_TYPE == "presentation" || window.NATIVE_DOCUMENT_TYPE == "document")
 	{
         Api = new window["Asc"]["asc_docs_api"]({});
+		if (options && options["documentLayout"] && undefined !== options["documentLayout"]["openedAt"])
+			Api.setOpenedAt(options["documentLayout"]["openedAt"]);
         Api.asc_nativeOpenFile(data, version);
 	}
 	else
@@ -308,3 +310,9 @@ var console = {
 	timeEnd: function (param) {}
 };
 
+var performance = window.performance = (function(){
+	var basePerformanceOffset = Date.now();
+	return {
+		now : function() { return Date.now() - basePerformanceOffset; }
+	};
+})();

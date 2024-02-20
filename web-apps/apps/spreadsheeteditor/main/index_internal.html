@@ -173,22 +173,70 @@
 
         window.frameEditorId = params["frameEditorId"];
         window.parentOrigin = params["parentOrigin"];
+        window.uitype = "cell";
 
         if ( !!params.uitheme ) {
             document.documentElement.classList.add(params.uitheme);
-        }
-
-        if ( window.AscDesktopEditor ) {
-            window.desktop = window.AscDesktopEditor;
-            window.on_native_message = function (cmd, param) {
-                !window.native_message_cmd && (window.native_message_cmd = []);
-                window.native_message_cmd[cmd] = param;
-            }
         }
     </script>
 
     <link rel="stylesheet" type="text/css" href="../../../../sdkjs/cell/css/main.css"/>
     <link rel="stylesheet" type="text/css" href="../../../apps/spreadsheeteditor/main/resources/css/app.css">
+    <script>
+
++function init_themes() {
+    var objtheme = localStorage.getItem("ui-theme");
+    if ( typeof(objtheme) == 'string' &&
+            objtheme.startsWith("{") && objtheme.endsWith("}") )
+    {
+        objtheme = JSON.parse(objtheme);
+    }
+
+    var ui_theme_name = objtheme && typeof(objtheme) == 'object' ? objtheme.id :
+        typeof(objtheme) == 'string' ? objtheme : localStorage.getItem("ui-theme-id");
+
+    if ( !!ui_theme_name ) {
+        if ( !!objtheme && !!objtheme.colors ) {
+            var colors = [];
+            for ( var c in objtheme.colors ) {
+                colors.push('--' + c + ':' + objtheme.colors[c]);
+            }
+
+            var style = document.createElement('style');
+            style.type = 'text/css';
+            style.innerHTML = '.' + ui_theme_name + '{'+ colors.join(';') +';}';
+            document.getElementsByTagName('head')[0].appendChild(style);
+
+            window.currentLoaderTheme = objtheme;
+        }
+    }
+}();
+</script>
+    <script>
+
+if ( window.AscDesktopEditor ) {
+    window.desktop = window.AscDesktopEditor;
+    desktop.features = {};
+    window.native_message_cmd = [];
+
+    window.on_native_message = function (cmd, param) {
+        if ( /window:features/.test(cmd) ) {
+            var obj = JSON.parse(param);
+            if ( obj.singlewindow !== undefined ) {
+                desktop.features.singlewindow = obj.singlewindow;
+            }
+        } else
+            window.native_message_cmd[cmd] = param;
+    }
+
+    if ( !!window.RendererProcessVariable ) {
+        desktop.theme = window.RendererProcessVariable.theme;
+    }
+
+    window.desktop.execCommand('webapps:entry', (window.features && JSON.stringify(window.features)) || '');
+}
+
+</script>
 </head>
 <body>
     <script>
@@ -246,6 +294,23 @@ var checkLocalStorage = (function () {
     }
 })();
 
+if ( window.desktop ) {
+    var theme = desktop.theme
+
+    if ( theme ) {
+        if ( !theme.id && !!theme.type ) {
+            if ( theme.type == 'dark' ) theme.id = 'theme-dark'; else
+            if ( theme.type == 'light' ) theme.id = 'theme-classic-light';
+        }
+
+        if ( theme.id ) {
+            // params.uitheme = undefined;
+            localStorage.setItem("ui-theme-id", theme.id);
+            localStorage.removeItem("ui-theme");
+        }
+    }
+}
+
 if ( !!params.uitheme && checkLocalStorage && !localStorage.getItem("ui-theme-id") ) {
     // const _t = params.uitheme.match(/([\w-]+)/g);
 
@@ -267,6 +332,16 @@ if ( !ui_theme_name ) {
 }
 if ( !!ui_theme_name ) {
     document.body.classList.add(ui_theme_name);
+}
+
+if ( checkLocalStorage ) {
+    var content_theme = localStorage.getItem("content-theme");
+    if ( content_theme == 'dark' ) {
+        var current_theme = localStorage.getItem("ui-theme");
+        if ( !!current_theme && /type":\s*"dark/.test(current_theme) ) {
+            document.body.classList.add("content-theme-dark");
+        }
+    }
 }
 
 </script>
@@ -295,6 +370,7 @@ if ( !!ui_theme_name ) {
             else if ( lang == 'es') reqerr = 'La conexión es muy lenta, algunos de los componentes no han podido cargar. Por favor recargue la página.';
             else if ( lang == 'fr') reqerr = 'La connexion est trop lente, certains des composants n\'ons pas pu être chargé. Veuillez recharger la page.';
             else if ( lang == 'ru') reqerr = 'Слишком медленное соединение, не удается загрузить некоторые компоненты. Пожалуйста, обновите страницу.';
+            else if ( lang == 'tr') reqerr = 'Bağlantı çok yavaş, bileşenlerin bazıları yüklenemedi. Lütfen sayfayı yenileyin.';
             else reqerr = 'The connection is too slow, some of the components could not be loaded. Please reload the page.';
 
             return reqerr;
