@@ -8,6 +8,16 @@ WORK_DIR=$(mktemp -d -t build-oo.XXXXX)
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 OUT_DIR=$SCRIPT_DIR
 
+copy_git() {
+  local SRC_DIR=$1
+  local DST_DIR=$2
+
+  mkdir -p "$DST_DIR"
+  pushd "$SRC_DIR"
+  git -c core.quotepath=off ls-files | xargs -I '{}' cp --parents '{}' "$DST_DIR"
+  popd
+}
+
 cd "$WORK_DIR"
 
 while [[ $# -gt 0 ]]; do
@@ -35,13 +45,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ ${SDKJS_DIR+x} ] ; then
-  cp -r "$SDKJS_DIR" .
+  copy_git "$SDKJS_DIR" "$WORK_DIR/sdkjs"
 else
   git clone --depth 1 --branch $BRANCH https://github.com/cryptpad/sdkjs
 fi
 
 if [ ${WEB_APPS_DIR+x} ] ; then
-  cp -r "$WEB_APPS_DIR" .
+  copy_git "$WEB_APPS_DIR" "$WORK_DIR/web-apps"
 else
   git clone --depth 1 --branch $BRANCH https://github.com/cryptpad/web-apps
 fi
