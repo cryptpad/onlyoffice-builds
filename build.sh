@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-BRANCH=cp7.1.0.219
+BRANCH=cp7.1.0.219-api
 
 WORK_DIR=$(mktemp -d -t build-oo.XXXXX)
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
